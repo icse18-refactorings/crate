@@ -52,9 +52,7 @@ import io.crate.planner.projection.builder.SplitPoints;
 import io.crate.planner.symbol.*;
 import io.crate.types.DataTypes;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class QueryThenFetchConsumer implements Consumer {
 
@@ -156,7 +154,7 @@ public class QueryThenFetchConsumer implements Consumer {
                 limit = Constants.DEFAULT_SELECT_LIMIT;
             }
 
-            CollectNode collectNode = PlanNodeBuilder.collect(
+            final CollectNode collectNode = PlanNodeBuilder.collect(
                     tableInfo,
                     context.plannerContext(),
                     querySpec.where(),
@@ -189,11 +187,15 @@ public class QueryThenFetchConsumer implements Consumer {
                     bulkSize = Constants.DEFAULT_SELECT_LIMIT;
                 }
 
+                Map<Integer, ArrayList<String>> nodeIds;
+
+                // TODO: create FetchProjectionBuilder
                 FetchProjection fetchProjection = new FetchProjection(
-                        collectNode.executionNodeId(),
+                        context.plannerContext().jobSearchContextIdToExecutionNodeId(),
                         DEFAULT_DOC_ID_INPUT_COLUMN, collectSymbols, outputSymbols,
                         tableInfo.partitionedByColumns(),
-                        collectNode.executionNodes(),
+                        new HashMap<Integer, List<String>>(){{
+                            put(collectNode.executionNodeId(), new ArrayList<>(collectNode.executionNodes()));}},
                         bulkSize,
                         querySpec.isLimited(),
                         context.plannerContext().jobSearchContextIdToNode(),
